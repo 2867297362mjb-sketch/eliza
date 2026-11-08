@@ -15,7 +15,7 @@
       "nativeOwnsAvailableRequests",
       "finiteBounds"
     ],
-    "status": "modeled",
+    "status": "partial",
     "limitations": [
       "Outer status-cache, request dispatch/retry and account-generation/refresh ownership model. The host must keep one native bridge identity within each account generation and call refreshNativeAccount when that owner changes.",
       "Two requests and one refresh, or two requests and two overlapping refreshes. Integer identities never wrap. These checks do not establish unbounded population or refresh behavior.",

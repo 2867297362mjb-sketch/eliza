@@ -37,3 +37,7 @@ fails authentication conformance. PR and develop Quint jobs provide this service
 These finite models do not establish TypeScript refinement, provider correctness
 or whole-backend coverage. Each sidecar states its safety properties, supported
 progress checks, fairness assumptions and remaining gaps.
+
+The job time-authority hook also needs `CREATEDB` on its isolated `qa_*` role.
+It creates and removes one private test database, then checks three process
+time zones against three database time zones.

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "ui-NativeRuntimeStatusCache",
+    "model": null,
+    "sources": [
+      "packages/ui/src/api/runtime-json-client.ts",
+      "packages/ui/src/api/__e2e__/runtime-json-client.test.ts"
+    ],
+    "invariants": [],
+    "status": "unmodeled",
+    "limitations": [
+      "Develop added account-generation-scoped reuse of native runtime status. Promise ownership, invalidation, late results, failure and retry still require a source-specific Quint model and conformance checks."
+    ]
+  },
+  {
+    "id": "native-ChromiumBindingDemand",
+    "model": null,
+    "sources": [
+      "plugins/plugin-native-browser-surface/android/src/main/java/ai/eliza/plugins/browsersurface/ChromiumBindingDemand.java",
+      "plugins/plugin-native-browser-surface/android/src/main/java/ai/eliza/plugins/browsersurface/ChromiumBrowserConnection.java",
+      "plugins/plugin-native-browser-surface/test/native-host/ChromiumBindingDemandTest.java"
+    ],
+    "invariants": [],
+    "status": "unmodeled",
+    "limitations": [
+      "Develop added demand-owned Chromium binding. Acquiring and releasing demand, connection callbacks, reconnect and teardown ownership still require a source-specific Quint model. Existing Java tests are implementation evidence only."
+    ]
+  }
+]

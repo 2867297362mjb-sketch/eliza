@@ -47,8 +47,8 @@ if (
   !/^ok \d+ - TLC state and action properties retain their checked outcomes$/m.test(
     output,
   ) ||
-  !/^# tests 22$/m.test(output) ||
-  !/^# pass 22$/m.test(output) ||
+  !/^# tests 23$/m.test(output) ||
+  !/^# pass 23$/m.test(output) ||
   !/^# fail 0$/m.test(output) ||
   !/^# skipped 0$/m.test(output) ||
   !/^# cancelled 0$/m.test(output)

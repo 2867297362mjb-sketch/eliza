@@ -593,6 +593,31 @@ test("the normal simulation entry point records one unchanged snapshot", async (
   }
 });
 
+test("a failed implementation check leaves an incomplete model receipt", async () => {
+  const conformance = "packages/example/quint/conformance.mjs";
+  const directory = fixture({
+    ...checkedFiles,
+    [conformance]: "process.exitCode = 17;\n",
+    [`${example}.cases.json`]: JSON.stringify({
+      sources: [stateSource],
+      conformance,
+      cases: [modelCase],
+    }),
+  });
+  const output = path.join(directory, "test-results/quint");
+  await assert.rejects(
+    main(["--simulate"], directory, output),
+    /Quint checks failed/,
+  );
+  const report = JSON.parse(
+    readFileSync(path.join(output, "simulation.json"), "utf8"),
+  );
+  assert.equal(report.completed, false);
+  assert.equal(report.results.at(-1).command[0], "conformance");
+  assert.equal(report.results.at(-1).exitCode, 17);
+  assert.equal(report.results.at(-1).matchedExpectation, false);
+});
+
 test("the normal entry point rejects an unlisted dependency changed during conformance", async () => {
   const conformance = "packages/example/quint/conformance.mjs";
   const directory = fixture({

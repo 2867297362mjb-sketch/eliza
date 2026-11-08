@@ -1,6 +1,7 @@
 // createRuntimeJsonClient's outer cache, request and account-refresh protocol.
 // The host keeps one bridge identity per generation. Provider readiness is an
 // abstract completion of ensure(), not a proof of its polling implementation.
+// Terminal failures are grouped. Exact error selection stays in the real suite.
 module RuntimeStatusCache {
   type Request = {
     epoch: int,
@@ -10,8 +11,6 @@ module RuntimeStatusCache {
     needsStartup: bool,
     probes: int,
     sends: int,
-    previousReply: str,
-    result: str
   }
   type State = {
     generation: int,
@@ -37,8 +36,6 @@ module RuntimeStatusCache {
     needsStartup: false,
     probes: 0,
     sends: 0,
-    previousReply: "",
-    result: ""
   }
   pure def initial(reuse: bool, allowed: Set[int], limit: int): State = {
     generation: 0,
@@ -62,7 +59,7 @@ module RuntimeStatusCache {
   // The cached path calls bridge.request synchronously from request(). The
   // uncached path starts a status promise. This helper performs no await.
   pure def admitCurrent(x: State, request: Request): Request =
-    if (x.refreshFailure) { ...request, phase: "failed", result: "refresh" }
+    if (x.refreshFailure) { ...request, phase: "failed" }
     else if (x.running == request.epoch) {
       ...request,
       phase: "native",
@@ -116,7 +113,7 @@ module RuntimeStatusCache {
   action resume(id: int): bool = {
     val request = s.requests.get(id)
     val resumed = if (request.epoch != s.generation)
-      { ...request, phase: "failed", result: "changed" }
+      { ...request, phase: "failed" }
       else admitCurrent(s, request)
     all {
       request.phase == "refresh",
@@ -133,13 +130,12 @@ module RuntimeStatusCache {
   action statusReply(id: int, outcome: str): bool = {
     val request = s.requests.get(id)
     val updated = if (outcome == "error")
-      { ...request, phase: "failed", result: "status" }
+      { ...request, phase: "failed" }
       else if (request.epoch != s.generation)
-        { ...request, phase: "failed", result: "changed" }
+        { ...request, phase: "failed" }
       else if (outcome == "unavailable") {
         ...request,
-        phase: if (request.retried) "failed" else "fallback",
-        result: if (request.retried) "notReady" else ""
+        phase: if (request.retried) "failed" else "fallback"
       } else {
         ...request,
         available: true,
@@ -163,8 +159,7 @@ module RuntimeStatusCache {
     val succeeds = request.epoch == s.generation and outcome == "ready"
     val updated = {
       ...request,
-      phase: if (succeeds) "dispatch" else "failed",
-      result: if (succeeds) "" else if (request.epoch != s.generation) "changed" else "startup"
+      phase: if (succeeds) "dispatch" else "failed"
     }
     all {
       request.phase == "ready",
@@ -187,8 +182,7 @@ module RuntimeStatusCache {
       sends: request.sends + 1
     } else {
       ...request,
-      phase: "failed",
-      result: "changed"
+      phase: "failed"
     }
     all {
       request.phase == "dispatch",
@@ -196,7 +190,7 @@ module RuntimeStatusCache {
         ...s,
         requests: s.requests.set(id, updated),
         staleDispatch: s.staleDispatch or (updated.phase == "native" and not(ownsGeneration)),
-        unsafeReplay: s.unsafeReplay or (ownsGeneration and request.sends > 0 and request.previousReply != "notReady")
+        unsafeReplay: s.unsafeReplay or (ownsGeneration and request.sends > 0 and not(request.retried))
       }
     }
   }
@@ -213,9 +207,6 @@ module RuntimeStatusCache {
         "done" else "failed",
       retried: request.retried or retry,
       probes: request.probes + (if (retry) 1 else 0),
-      previousReply: outcome,
-      result: if (outcome == "error" or (outcome == "notReady" and (not(s.reuse) or request.retried)))
-        outcome else if (request.epoch != s.generation) "changed" else outcome
     }
     all {
       request.phase == "native",
@@ -238,8 +229,7 @@ module RuntimeStatusCache {
         ...s,
         requests: s.requests.set(id, {
           ...request,
-          phase: if (succeeds) "done" else "failed",
-          result: if (request.epoch != s.generation) "changed" else outcome
+          phase: if (succeeds) "done" else "failed"
         })
       }
     }
